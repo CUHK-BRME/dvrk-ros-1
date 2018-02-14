@@ -1,7 +1,7 @@
 #  Author(s):  Anton Deguet
 #  Created on: 2016-05
 
-# (C) Copyright 2016-2017 Johns Hopkins University (JHU), All Rights Reserved.
+# (C) Copyright 2016-2018 Johns Hopkins University (JHU), All Rights Reserved.
 
 # --- begin cisst license - do not edit ---
 
@@ -11,12 +11,12 @@
 
 # --- end cisst license ---
 
-import threading
-
 import rospy
+import numpy
 import PyKDL
 
 from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import JointState
 from tf_conversions import posemath
 
 class suj(object):
@@ -42,6 +42,9 @@ class suj(object):
 
         # publishers
         self.__full_ros_namespace = self.__ros_namespace + self.__arm_name
+        self.__set_position_joint_pub = rospy.Publisher(self.__full_ros_namespace
+                                                        + '/set_position_joint',
+                                                        JointState, latch = False, queue_size = 1)
 
         # subscribers
         rospy.Subscriber(self.__full_ros_namespace + '/servoed_cp',
@@ -59,6 +62,12 @@ class suj(object):
         else:
             rospy.logdebug(rospy.get_caller_id() + ' -> ROS already initialized')
 
+    def __state_joint_current_cb(self, data):
+        """Callback for the current joint position.
+
+        :param data: the `JointState <http://docs.ros.org/api/sensor_msgs/html/msg/JointState.html>`_current"""
+        self.__position_joint_current.resize(len(data.position))
+        self.__position_joint_current.flat[:] = data.position
 
     def __servoed_cp_cb(self, data):
         """Callback for the cartesian desired position.
